@@ -18,7 +18,7 @@ var StartLayer = cc.Layer.extend({
     update: function () {
         if (this.peers == undefined) return;
 
-
+        var that = this;
 
         for (var i = 0; i < this.peers.length; i ++) {
             var sprite = this.peers[i];
@@ -28,6 +28,13 @@ var StartLayer = cc.Layer.extend({
                 speed.y - this.ovariumDetails.speed.y
             ));
         }
+
+        this.walls.forEach(function (wall, index) {
+            wall.runAction(cc.MoveBy(1/ globals.frameRate,
+                - that.ovariumDetails.speed.x,
+                - that.ovariumDetails.speed.y
+            ));
+        });
     },
 
     ovarium: null,
@@ -45,6 +52,7 @@ var StartLayer = cc.Layer.extend({
         },
         scale: 1,
     },
+    walls: [],
     peers: [],
     ejectionParticleSystemTexture: null,
 
@@ -125,11 +133,30 @@ var StartLayer = cc.Layer.extend({
             cc.rotateBy(20, 360));
         this.ovarium.runAction(spinAction);
         this.addChild(this.ovarium, 1);
-        this.setupScene();
+        this.setupWalls();
     },
 
-    setupScene: function () {
+    setupWalls: function () {
+        var wallTexture = cc.textureCache.addImage(res.WallPiece_tga);
+        for (var i = 0; i < 8; i ++) {
+            var wall = cc.Sprite();
+            this.addChild(wall);
+            this.walls = this.walls.concat(wall);
+        }
+        // up wall
+        this.walls[0].initWithTexture(wallTexture,
+            cc.rect(0, globals.playground.height, globals.playground.width, globals.wallThickness), true);
+        // down wall
+        this.walls[1].initWithTexture(wallTexture,
+            cc.rect(0, -globals.wallThickness, globals.playground.width, globals.wallThickness), true);
+        // left wall
+        this.walls[2].initWithTexture(wallTexture,
+            cc.rect(- globals.wallThickness, 0, globals.wallThickness, globals.playground.height));
+        // right wall
+        this.walls[3].initWithTexture(wallTexture,
+            cc.rect(globals.playground.width, 0, globals.wallThickness, globals.playground.height));
 
+        cc.log("wall added");
     },
 
     addListeners: function () {
