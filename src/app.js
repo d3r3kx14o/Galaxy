@@ -28,13 +28,14 @@ var StartLayer = cc.Layer.extend({
                 speed.y - this.ovariumDetails.speed.y
             ));
         }
-
-        this.walls.forEach(function (wall, index) {
-            wall.runAction(cc.MoveBy(1/ globals.frameRate,
+        for (var i = 0; i < this.walls.length; i ++) {
+            var _wall = this.walls[i];
+            _wall.runAction(cc.MoveBy(1 / globals.frameRate,
                 - that.ovariumDetails.speed.x,
                 - that.ovariumDetails.speed.y
             ));
-        });
+        }
+
     },
 
     ovarium: null,
@@ -138,25 +139,74 @@ var StartLayer = cc.Layer.extend({
 
     setupWalls: function () {
         var wallTexture = cc.textureCache.addImage(res.WallPiece_tga);
+        var wallPieceCorner = cc.textureCache.addImage(res.WallPieceCorner_tga);
+        var scales = [
+            // up, down, left, right
+            globals.playground.width,
+            globals.playground.width,
+            globals.playground.height,
+            globals.playground.height
+        ]; // [x, y]
+        var rotations = [90, 270, 0, 180, 90, 180, 270, 0];
+        var locations = [
+            // up, down, left, right
+            {
+                x: globals.playground.width / 2,
+                y: globals.playground.height + globals.wallThickness / 2
+            }, {
+                x: globals.playground.width / 2,
+                y: - globals.wallThickness / 2
+            }, {
+                x: - globals.wallThickness / 2,
+                y: globals.playground.height / 2
+            }, {
+                x: globals.wallThickness / 2 + globals.playground.width,
+                y: globals.playground.height / 2
+            },
+            // up-left, up-right, down-right, down-left
+            {
+                x: - globals.wallThickness / 2,
+                y: globals.playground.height + globals.wallThickness / 2
+            }, {
+                x: globals.wallThickness / 2 + globals.playground.width,
+                y: globals.playground.height + globals.wallThickness / 2
+            }, {
+                x: globals.wallThickness / 2 + globals.playground.width,
+                y: - globals.wallThickness / 2
+            }, {
+                x: - globals.wallThickness / 2,
+                y: - globals.wallThickness / 2
+            }
+        ];
         for (var i = 0; i < 8; i ++) {
-            var wall = cc.Sprite();
+            var wall = null;
+            var s = globals.wallThickness / 128;
+            if (i < 4) {
+                wall = cc.Sprite(wallTexture);
+                wall.setScaleX(s);
+                wall.setScaleY(scales[i] / 128);
+            } else {
+                wall = cc.Sprite(wallPieceCorner);
+                wall.setScale(s, s);
+            }
+            wall.setRotation(rotations[i]);
+            wall.attr(locations[i]);
             this.addChild(wall);
             this.walls = this.walls.concat(wall);
         }
-        // up wall
-        this.walls[0].initWithTexture(wallTexture,
-            cc.rect(0, globals.playground.height, globals.playground.width, globals.wallThickness), true);
-        // down wall
-        this.walls[1].initWithTexture(wallTexture,
-            cc.rect(0, -globals.wallThickness, globals.playground.width, globals.wallThickness), true);
-        // left wall
-        this.walls[2].initWithTexture(wallTexture,
-            cc.rect(- globals.wallThickness, 0, globals.wallThickness, globals.playground.height));
-        // right wall
-        this.walls[3].initWithTexture(wallTexture,
-            cc.rect(globals.playground.width, 0, globals.wallThickness, globals.playground.height));
+//         up wall
+//        this.walls[0].initWithTexture(wallTexture,
+//            cc.rect(0, globals.playground.height, globals.playground.width, globals.wallThickness), true);
 
-        cc.log("wall added");
+//         down wall
+//        this.walls[1].initWithTexture(wallTexture,
+//            cc.rect(0, -globals.wallThickness, globals.playground.width, globals.wallThickness), true);
+//        // left wall
+//        this.walls[2].initWithTexture(wallTexture,
+//            cc.rect(- globals.wallThickness, 0, globals.wallThickness, globals.playground.height));
+//        // right wall
+//        this.walls[3].initWithTexture(wallTexture,
+//            cc.rect(globals.playground.width, 0, globals.wallThickness, globals.playground.height));
     },
 
     addListeners: function () {
