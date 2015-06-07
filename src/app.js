@@ -38,8 +38,40 @@ var StartLayer = cc.Layer.extend({
         this.addChild(collisionParticleSystem);
     },
 
+    // TODO
+    updatePeers: function () {
+        for (var i = 0; i < this.peers.length; i ++) {
+            var sprite = this.peers[i];
+            var speed = sprite.getSpeed();
+            sprite.runAction(cc.MoveBy(1 / globals.frameRate,
+                speed.x - this.ovariumDetails.speed.x,
+                speed.y - this.ovariumDetails.speed.y
+            ));
+        }
+    },
+
+    drawPeers: function () {
+    },
+
+    updateOvarium: function () {
+
+    },
+
+    updateBGSparkles: function () {
+        for (var i = 0; i < this.backgroundSparkles.length; i ++) {
+            var sparkle = this.backgroundSparkles[i];
+            sparkle.runAction(cc.MoveBy(1 / globals.frameRate,
+                - this.ovariumDetails.speed.x,
+                - this.ovariumDetails.speed.y
+            ));
+        }
+    },
+
     update: function () {
         if (this.peers == undefined) return;
+
+        this.updatePeers();
+        this.updateBGSparkles();
 
         var that = this;
         that.ovariumDetails.position.x += that.ovariumDetails.speed.x;
@@ -54,6 +86,7 @@ var StartLayer = cc.Layer.extend({
             ));
         }
 
+        // check collisions with walls
         if (that.ovariumDetails.position.x + that.ovariumDetails.img_radius > globals.playground.width) {
             that.ovariumDetails.speed.x = - that.ovariumDetails.speed.x;
             for (var i = 0; i < 2; i ++) that.ovariumDetails.position.x += that.ovariumDetails.speed.x;
@@ -75,13 +108,9 @@ var StartLayer = cc.Layer.extend({
             this.addCollideWithWallsEffect("up", that.ovariumDetails.position.x, globals.playground.height);
         }
 
+        // check collisions with peers
         for (var i = 0; i < this.peers.length; i ++) {
-            var sprite = this.peers[i];
-            var speed = sprite.getSpeed();
-            sprite.runAction(cc.MoveBy(1 / globals.frameRate,
-                speed.x - this.ovariumDetails.speed.x,
-                speed.y - this.ovariumDetails.speed.y
-            ));
+            var p = this.peers[i];
         }
     },
 
@@ -91,6 +120,7 @@ var StartLayer = cc.Layer.extend({
     ovariumAurora_anticlock: null,
     ovariumNucleus: null,
     ovariumEmergencePS: null,
+    ovariumHaloTexture: null,
     ovariumDetails: {
         radius: 640,
         img_radius: 59.5,
@@ -105,6 +135,7 @@ var StartLayer = cc.Layer.extend({
         },
         scale: 1,
     },
+    backgroundSparkles: [],
     walls: [],
     peers: [],
 
@@ -178,8 +209,25 @@ var StartLayer = cc.Layer.extend({
             y: this.viewCenter.y
         };
 
-        // Add and render ovarium
+        this.renderOvarium();
 
+        this.setupScene();
+
+        this.cacheTextures();
+    },
+
+    cacheTextures: function () {
+        this.ovariumHaloTexture = cc.textureCache.addImage(res.OvariumHalo_png);
+//        this.ejectionPlist = cc.textureCache.addImage(res.ParticleTexture_plist);
+    },
+
+    setupScene: function () {
+        this.setupBackground();
+        this.setupWalls();
+    },
+
+    renderOvarium: function () {
+        // Add and render ovarium
         this.ovariumShell = new cc.Sprite(res.OvariumParticleSmall_tga);
         this.ovariumShell.attr(this.viewCenter);
         this.addChild(this.ovariumShell, 1);
@@ -221,16 +269,55 @@ var StartLayer = cc.Layer.extend({
         this.ovariumEmergencePS.attr(this.viewCenter);
         this.addChild(this.ovariumEmergencePS, 1);
         this.ovariumEmergencePS.setScale(0.1);
-
-        this.setupWalls();
-
-        this.cacheTextures();
     },
 
-    cacheTextures: function () {
-//        this.ejectionPlist = cc.textureCache.addImage(res.ParticleTexture_plist);
+    convertToViewpointSpace: function (coor) {
+        return {
+            x: coor.x - this.ovariumDetails.position.x + this.viewCenter.x,
+            y: coor.y - this.ovariumDetails.position.y + this.viewCenter.y
+        }
     },
 
+    generateRandomAnchorPointInWorldSpace: function () {
+        return cc.p(Math.random() * globals.playground.width, Math.random() * globals.playground.height);
+    },
+
+    generateRandomAnchorPointInViewSpace: function () {
+        return this.convertToViewpointSpace(this.generateRandomAnchorPointInWorldSpace());
+    },
+
+    // add background sparkles
+    setupBackground: function () {
+        var sparkleTexture = cc.textureCache.addImage(res.BlobSparkles_tga);
+        this.backgroundSparkles = [];
+        for (var i = 0; i < 100; i ++) {
+            var array = [];
+            for (var j = 0; j < 5; j ++) array = array.concat(this.generateRandomAnchorPointInViewSpace());
+
+            // shift action
+            var action = cc.cardinalSplineBy(500, array, 0);
+            var reverse = action.reverse();
+            var sparkle = new cc.Sprite(sparkleTexture);
+            var seq = cc.sequence(action, reverse);
+
+            // scaling action
+            var initScale = Math.max(Math.random() * 1.2, 0.5);
+            sparkle.setScale(initScale);
+            var scaleAction = cc.scaleBy(300, 0.9);
+            var scaleBackAction = scaleAction.reverse();
+            var seq1 = cc.sequence(scaleAction, scaleBackAction);
+
+            // spin action
+            var rotation = cc.rotateBy(100, 250 * (Math.random() + 0.1));
+            if (Math.random() > 0.5) rotation = rotation.reverse();
+
+            sparkle.runAction(cc.RepeatForever(rotation));
+            sparkle.runAction(cc.RepeatForever(seq));
+            sparkle.runAction(cc.RepeatForever(seq1));
+            this.addChild(sparkle);
+            this.backgroundSparkles = this.backgroundSparkles.concat(sparkle);
+        }
+    },
     setupWalls: function () {
         var wallTexture = cc.textureCache.addImage(res.WallPiece_tga);
         var wallPieceCorner = cc.textureCache.addImage(res.WallPieceCorner_tga);
@@ -307,6 +394,11 @@ var StartLayer = cc.Layer.extend({
                     x: Math.cos(eject_angle),
                     y: Math.sin(eject_angle)
                 };
+                var absortionPosition = {
+                    x: _offset.x * that.ovariumDetails.img_radius + that.viewCenter.x,
+                    y: _offset.y * that.ovariumDetails.img_radius + that.viewCenter.y
+                };
+
                 // update ovarium speed
                 that.ovariumDetails.speed = {
                     x: that.ovariumDetails.speed.x - _offset.x * globals.ejectForce,
@@ -316,10 +408,7 @@ var StartLayer = cc.Layer.extend({
                 that.addPeer({
                     x: that.ovariumDetails.speed.x + _offset.x * globals.ejectInitSpeed,
                     y: that.ovariumDetails.speed.y + _offset.y * globals.ejectInitSpeed
-                }, {
-                    x: _offset.x * that.ovariumDetails.img_radius + that.viewCenter.x,
-                    y: _offset.y * that.ovariumDetails.img_radius + that.viewCenter.y
-                }, 0.1);
+                }, absortionPosition, 0.1);
 
                 var ejectionPSScale = 0.1;
                 var ps = new cc.ParticleSystem(res.ParticleTexture_plist);
@@ -333,6 +422,13 @@ var StartLayer = cc.Layer.extend({
                 });
                 ps.setPositionType(cc.ParticleSystem.TYPE_FREE);
                 that.addChild(ps);
+
+                var absortionHalo = new cc.Sprite(that.ovariumHaloTexture);
+                absortionHalo.setRotation(- eject_angle * 180 / Math.PI + 90);
+                absortionHalo.setScale(that.ovariumDetails.scale * 0.5);
+                absortionHalo.attr(absortionPosition);
+                absortionHalo.runAction(cc.fadeOut(3));
+                that.addChild(absortionHalo, 2);
 
                 return true;
             }
