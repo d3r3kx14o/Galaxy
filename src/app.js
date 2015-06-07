@@ -15,10 +15,65 @@ var StartLayer = cc.Layer.extend({
         return true;
     },
 
+    addCollideWithWallsEffect: function (direction, x, y) {
+        var collisionParticleSystem = new cc.ParticleSystem(res.WallCollisionEffect_plist);
+        collisionParticleSystem.setPositionType(cc.ParticleSystem.TYPE_FREE);
+        var rotation = 0;
+        switch (direction) {
+        case "up":
+            rotation = 270;
+            break;
+        case "down":
+            rotation = 90;
+            break;
+        case "left":
+            rotation = 180;
+            break;
+        default:
+            break;
+        }
+        collisionParticleSystem.setRotation(rotation);
+        collisionParticleSystem.setScale(0.4);
+        collisionParticleSystem.attr({x: x, y: y});
+        this.addChild(collisionParticleSystem);
+    },
+
     update: function () {
         if (this.peers == undefined) return;
 
         var that = this;
+        that.ovariumDetails.position.x += that.ovariumDetails.speed.x;
+        that.ovariumDetails.position.y += that.ovariumDetails.speed.y;
+
+        // update walls
+        for (var i = 0; i < this.walls.length; i ++) {
+            var _wall = this.walls[i];
+            _wall.runAction(cc.MoveBy(1 / globals.frameRate,
+                - that.ovariumDetails.speed.x,
+                - that.ovariumDetails.speed.y
+            ));
+        }
+
+        if (that.ovariumDetails.position.x + that.ovariumDetails.img_radius > globals.playground.width) {
+            that.ovariumDetails.speed.x = - that.ovariumDetails.speed.x;
+            for (var i = 0; i < 2; i ++) that.ovariumDetails.position.x += that.ovariumDetails.speed.x;
+            this.addCollideWithWallsEffect("right", globals.playground.width, that.ovariumDetails.position.y);
+        }
+        if (that.ovariumDetails.position.x  < that.ovariumDetails.img_radius) {
+            that.ovariumDetails.speed.x = - that.ovariumDetails.speed.x;
+            for (var i = 0; i < 2; i ++) that.ovariumDetails.position.x += that.ovariumDetails.speed.x;
+            this.addCollideWithWallsEffect("left", 0, that.ovariumDetails.position.y);
+        }
+        if (that.ovariumDetails.position.y < that.ovariumDetails.img_radius) {
+            that.ovariumDetails.speed.y = - that.ovariumDetails.speed.y;
+            for (var i = 0; i < 2; i ++) that.ovariumDetails.position.y += that.ovariumDetails.speed.y;
+            this.addCollideWithWallsEffect("down", that.ovariumDetails.position.x, 0);
+        }
+        if (that.ovariumDetails.position.y + that.ovariumDetails.img_radius > globals.playground.height) {
+            that.ovariumDetails.speed.y = - that.ovariumDetails.speed.y;
+            for (var i = 0; i < 2; i ++) that.ovariumDetails.position.y += that.ovariumDetails.speed.y;
+            this.addCollideWithWallsEffect("up", that.ovariumDetails.position.x, globals.playground.height);
+        }
 
         for (var i = 0; i < this.peers.length; i ++) {
             var sprite = this.peers[i];
@@ -28,20 +83,17 @@ var StartLayer = cc.Layer.extend({
                 speed.y - this.ovariumDetails.speed.y
             ));
         }
-        for (var i = 0; i < this.walls.length; i ++) {
-            var _wall = this.walls[i];
-            _wall.runAction(cc.MoveBy(1 / globals.frameRate,
-                - that.ovariumDetails.speed.x,
-                - that.ovariumDetails.speed.y
-            ));
-        }
-
     },
 
     ovarium: null,
     ovariumShell: null,
+    ovariumAurora_clock: null,
+    ovariumAurora_anticlock: null,
+    ovariumNucleus: null,
+    ovariumEmergencePS: null,
     ovariumDetails: {
         radius: 640,
+        img_radius: 59.5,
         visionRange: 100,
         speed: {
             x: 0,
@@ -55,7 +107,6 @@ var StartLayer = cc.Layer.extend({
     },
     walls: [],
     peers: [],
-    ejectionParticleSystemTexture: null,
 
     viewCenter: {
         x: 0,
@@ -109,7 +160,7 @@ var StartLayer = cc.Layer.extend({
         var sprite = new PeerSprite(res.PeerSmall_tga);
         sprite.setScale(size);
         sprite.setSpeed(speed);
-        cc.log(position.x + ": " + position.y);
+//        cc.log(position.x + ": " + position.y);
         sprite.attr(position);
         this.addChild(sprite);
         this.peers = this.peers.concat(sprite);
@@ -122,6 +173,11 @@ var StartLayer = cc.Layer.extend({
             y: size.height / 2
         };
 
+        this.ovariumDetails.position = {
+            x: this.viewCenter.x,
+            y: this.viewCenter.y
+        };
+
         // Add and render ovarium
 
         this.ovariumShell = new cc.Sprite(res.OvariumParticleSmall_tga);
@@ -130,11 +186,49 @@ var StartLayer = cc.Layer.extend({
 
         this.ovarium = new cc.Sprite(res.Ovarium_tga);
         this.ovarium.attr(this.viewCenter);
-        var spinAction = cc.RepeatForever(
-            cc.rotateBy(20, 360));
-        this.ovarium.runAction(spinAction);
         this.addChild(this.ovarium, 1);
+
+        this.ovariumAurora_clock = new cc.Sprite(res.OvariumAurora_tga);
+        this.ovariumAurora_clock.attr(this.viewCenter);
+        this.addChild(this.ovariumAurora_clock, 1);
+        var spinAction = cc.RepeatForever(
+            cc.rotateBy(40, 360));
+        this.ovariumAurora_clock.runAction(spinAction);
+
+        this.ovariumAurora_anticlock = new cc.Sprite(res.OvariumAurora_tga);
+        this.ovariumAurora_anticlock.attr(this.viewCenter);
+        this.addChild(this.ovariumAurora_anticlock, 1);
+        var reverseSpinAction = cc.RepeatForever(
+            cc.rotateBy(40, - 360));
+        this.ovariumAurora_anticlock.runAction(reverseSpinAction);
+
+        this.ovariumNucleus = new cc.Sprite(res.OvariumNucleus_tga);
+        this.ovariumNucleus.attr(this.viewCenter);
+        var half_period = 3;
+        this.ovariumNucleus.runAction(cc.RepeatForever(cc.sequence(
+            cc.fadeTo(half_period, 125), cc.fadeTo(half_period, 200)
+        )));
+        this.ovariumNucleus.runAction(cc.RepeatForever(cc.sequence(
+            cc.scaleTo(half_period, 0.8), cc.scaleTo(half_period, 1.3)
+        )));
+        this.ovariumNucleus.runAction(cc.RepeatForever(cc.sequence(
+            cc.tintTo(half_period, 63, 126, 176), cc.tintTo(half_period, 255, 255, 255)
+        )));
+        this.addChild(this.ovariumNucleus, 1);
+
+        this.ovariumEmergencePS = cc.ParticleSystem(res.EmergenceEffect_plist);
+        this.ovariumEmergencePS.setPositionType(cc.ParticleSystem.TYPE_FREE);
+        this.ovariumEmergencePS.attr(this.viewCenter);
+        this.addChild(this.ovariumEmergencePS, 1);
+        this.ovariumEmergencePS.setScale(0.1);
+
         this.setupWalls();
+
+        this.cacheTextures();
+    },
+
+    cacheTextures: function () {
+//        this.ejectionPlist = cc.textureCache.addImage(res.ParticleTexture_plist);
     },
 
     setupWalls: function () {
@@ -194,19 +288,6 @@ var StartLayer = cc.Layer.extend({
             this.addChild(wall);
             this.walls = this.walls.concat(wall);
         }
-//         up wall
-//        this.walls[0].initWithTexture(wallTexture,
-//            cc.rect(0, globals.playground.height, globals.playground.width, globals.wallThickness), true);
-
-//         down wall
-//        this.walls[1].initWithTexture(wallTexture,
-//            cc.rect(0, -globals.wallThickness, globals.playground.width, globals.wallThickness), true);
-//        // left wall
-//        this.walls[2].initWithTexture(wallTexture,
-//            cc.rect(- globals.wallThickness, 0, globals.wallThickness, globals.playground.height));
-//        // right wall
-//        this.walls[3].initWithTexture(wallTexture,
-//            cc.rect(globals.playground.width, 0, globals.wallThickness, globals.playground.height));
     },
 
     addListeners: function () {
@@ -231,6 +312,15 @@ var StartLayer = cc.Layer.extend({
                     x: that.ovariumDetails.speed.x - _offset.x * globals.ejectForce,
                     y: that.ovariumDetails.speed.y - _offset.y * globals.ejectForce
                 };
+
+                that.addPeer({
+                    x: that.ovariumDetails.speed.x + _offset.x * globals.ejectInitSpeed,
+                    y: that.ovariumDetails.speed.y + _offset.y * globals.ejectInitSpeed
+                }, {
+                    x: _offset.x * that.ovariumDetails.img_radius + that.viewCenter.x,
+                    y: _offset.y * that.ovariumDetails.img_radius + that.viewCenter.y
+                }, 0.1);
+
                 var ejectionPSScale = 0.1;
                 var ps = new cc.ParticleSystem(res.ParticleTexture_plist);
                 ps.setScale(ejectionPSScale * that.ovariumDetails.scale);
@@ -243,16 +333,6 @@ var StartLayer = cc.Layer.extend({
                 });
                 ps.setPositionType(cc.ParticleSystem.TYPE_FREE);
                 that.addChild(ps);
-
-                that.addPeer({
-                    x: that.ovariumDetails.speed.x + _offset.x * globals.ejectInitSpeed,
-                    y: that.ovariumDetails.speed.y + _offset.y * globals.ejectInitSpeed
-                }, {
-                    x: _offset.x * that.ovariumDetails.radius + that.viewCenter.x,
-                    y: _offset.y * that.ovariumDetails.radius + that.viewCenter.y
-                }, 0.1);
-                var p = ps.getSourcePosition();
-//                cc.log(p.x + ": " + p.y);
 
                 return true;
             }
