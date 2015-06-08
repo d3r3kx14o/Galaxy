@@ -1,47 +1,76 @@
 var StartLayer = cc.Layer.extend({
     ctor: function() {
         this._super();
-//        cc.log(Math.random());
-
         this.initLayer();
+        this.gameStart();
+        return true;
+    },
 
-        // TODO
-        // info of peers should download from server
-        this.initPeers();
-
+    gameStart: function () {
+        this.initPeerSprites();
         this.addListeners();
         this.schedule(this.update, 1 / globals.frameRate);
-
-        return true;
     },
 
     addCollideWithWallsEffect: function (direction, x, y) {
         var collisionParticleSystem = new cc.ParticleSystem(res.WallCollisionEffect_plist);
         collisionParticleSystem.setPositionType(cc.ParticleSystem.TYPE_FREE);
+
         var rotation = 0;
+        var offset = null;
         switch (direction) {
         case "up":
             rotation = 270;
+            offset = {x: 0, y: -100};
             break;
         case "down":
             rotation = 90;
+            offset = {x: 0, y: 100};
             break;
         case "left":
             rotation = 180;
+            offset = {x: 100, y: 0};
             break;
         default:
+            offset = {x: -100, y: 0};
             break;
         }
         collisionParticleSystem.setRotation(rotation);
-        collisionParticleSystem.setScale(0.4);
+        collisionParticleSystem.setScale(0.1);
         collisionParticleSystem.attr({x: x, y: y});
+        collisionParticleSystem.runAction(cc.MoveBy(100, offset));
         this.addChild(collisionParticleSystem);
     },
 
-    // TODO
-    updatePeers: function () {
+    addEjectionEffect: function (absortionPosition, angle) {
+        var radius = this.ovariumDetails.radius;
+
+        var ejectionPSScale = 0.1;
+        var ps = new cc.ParticleSystem(res.ParticleTexture_plist);
+        ps.setScale(ejectionPSScale * this.ovariumDetails.scale);
+        ps.attr({
+            sourcePos: cc.p(
+                -440 + Math.cos(angle) * radius,
+                420 + Math.sin(angle) * radius
+                ),
+            angle: (angle * 180) / Math.PI
+        });
+        ps.setPositionType(cc.ParticleSystem.TYPE_FREE);
+        this.addChild(ps);
+    },
+
+    initPeerSprites: function () {
         for (var i = 0; i < this.peers.length; i ++) {
-            var sprite = this.peers[i];
+            var p = this.peers[i];
+            this.addPeer(p.speed, p.position, p.radius, p.property, false);
+        }
+    },
+
+    // TODO for Travis
+    updatePeers: function () {
+        if (this.peerSprites == undefined) return;
+        for (var i = 0; i < this.peerSprites.length; i ++) {
+            var sprite = this.peerSprites[i];
             var speed = sprite.getSpeed();
             sprite.runAction(cc.MoveBy(1 / globals.frameRate,
                 speed.x - this.ovariumDetails.speed.x,
@@ -54,65 +83,54 @@ var StartLayer = cc.Layer.extend({
     },
 
     updateOvarium: function () {
-
+        this.ovariumDetails.position.x += this.ovariumDetails.speed.x;
+        this.ovariumDetails.position.y += this.ovariumDetails.speed.y;
     },
 
-    updateBGSparkles: function () {
-        for (var i = 0; i < this.backgroundSparkles.length; i ++) {
-            var sparkle = this.backgroundSparkles[i];
-            sparkle.runAction(cc.MoveBy(1 / globals.frameRate,
-                - this.ovariumDetails.speed.x,
-                - this.ovariumDetails.speed.y
-            ));
-        }
-    },
-
-    update: function () {
-        if (this.peers == undefined) return;
-
-        this.updatePeers();
-        this.updateBGSparkles();
-
-        var that = this;
-        that.ovariumDetails.position.x += that.ovariumDetails.speed.x;
-        that.ovariumDetails.position.y += that.ovariumDetails.speed.y;
-
+    updateWalls: function () {
         // update walls
         for (var i = 0; i < this.walls.length; i ++) {
             var _wall = this.walls[i];
             _wall.runAction(cc.MoveBy(1 / globals.frameRate,
-                - that.ovariumDetails.speed.x,
-                - that.ovariumDetails.speed.y
+                - this.ovariumDetails.speed.x,
+                - this.ovariumDetails.speed.y
             ));
         }
-
-        // check collisions with walls
-        if (that.ovariumDetails.position.x + that.ovariumDetails.img_radius > globals.playground.width) {
-            that.ovariumDetails.speed.x = - that.ovariumDetails.speed.x;
-            for (var i = 0; i < 2; i ++) that.ovariumDetails.position.x += that.ovariumDetails.speed.x;
-            this.addCollideWithWallsEffect("right", globals.playground.width, that.ovariumDetails.position.y);
-        }
-        if (that.ovariumDetails.position.x  < that.ovariumDetails.img_radius) {
-            that.ovariumDetails.speed.x = - that.ovariumDetails.speed.x;
-            for (var i = 0; i < 2; i ++) that.ovariumDetails.position.x += that.ovariumDetails.speed.x;
-            this.addCollideWithWallsEffect("left", 0, that.ovariumDetails.position.y);
-        }
-        if (that.ovariumDetails.position.y < that.ovariumDetails.img_radius) {
-            that.ovariumDetails.speed.y = - that.ovariumDetails.speed.y;
-            for (var i = 0; i < 2; i ++) that.ovariumDetails.position.y += that.ovariumDetails.speed.y;
-            this.addCollideWithWallsEffect("down", that.ovariumDetails.position.x, 0);
-        }
-        if (that.ovariumDetails.position.y + that.ovariumDetails.img_radius > globals.playground.height) {
-            that.ovariumDetails.speed.y = - that.ovariumDetails.speed.y;
-            for (var i = 0; i < 2; i ++) that.ovariumDetails.position.y += that.ovariumDetails.speed.y;
-            this.addCollideWithWallsEffect("up", that.ovariumDetails.position.x, globals.playground.height);
-        }
-
-        // check collisions with peers
-        for (var i = 0; i < this.peers.length; i ++) {
-            var p = this.peers[i];
-        }
+//        cc.log(this.ovariumDetails.speed.x + ": " + this.ovariumDetails.speed.x);
     },
+
+    updateBGSparkles: function () {
+        var speed = this.ovariumDetails.speed;
+        for (var i = 0; i < this.backgroundSparkles.length; i ++) {
+            var sparkle = this.backgroundSparkles[i];
+            sparkle.runAction(cc.MoveBy(1 / globals.frameRate,
+                - speed.x,
+                - speed.y
+            ));
+        }
+//        cc.log("start");
+    },
+
+    // TODO for NyxSpirit
+    checkCollisions: function () {
+        // null point check
+        if (this.peerSprites == undefined) return;
+
+    },
+
+//    test: 12324345,
+    update: function () {
+//        cc.log("asdfasdfs");
+//        cc.log(this.test);
+
+        this.updateBGSparkles();
+        this.updateWalls();
+        this.updatePeers();
+        this.updateOvarium();
+        this.checkCollisions();
+    },
+
+    connection: null,
 
     ovarium: null,
     ovariumShell: null,
@@ -121,6 +139,7 @@ var StartLayer = cc.Layer.extend({
     ovariumNucleus: null,
     ovariumEmergencePS: null,
     ovariumHaloTexture: null,
+    peerTexture: null,
     ovariumDetails: {
         radius: 640,
         img_radius: 59.5,
@@ -137,67 +156,33 @@ var StartLayer = cc.Layer.extend({
     },
     backgroundSparkles: [],
     walls: [],
+    peerSprites: [],
     peers: [],
+    playerPeers: [],
 
     viewCenter: {
         x: 0,
         y: 0
     },
 
-    // For debug use
-    initPeers: function () {
-        var initCap = 10;
-        this.peers = [];
-        for (var i = 0; i < initCap; i ++) {
-            this.addPeer({
-                x: (Math.random() - 0.5) * 2,
-                y: (Math.random() - 0.5) * 2
-            }, {
-                x: this.ovariumDetails.position.x + (Math.random() - 0.5) * 500,
-                y: this.ovariumDetails.position.y + (Math.random() - 0.5) * 500
-            }, Math.random());
+    addPeer: function (speed, position, size, gang, sync) {
+        if (sync) {
+            this.connection.eject();
         }
-        this.addPeer({
-            x: 0,
-            y: 0
-        }, {
-            x: this.ovariumDetails.position.x - 100,
-            y: this.ovariumDetails.position.y - 100
-        }, 1);
-        this.addPeer({
-            x: 0,
-            y: 0
-        }, {
-            x: this.ovariumDetails.position.x - 100,
-            y: this.ovariumDetails.position.y + 100
-        }, 1);
-        this.addPeer({
-            x: 0,
-            y: 0
-        }, {
-            x: this.ovariumDetails.position.x + 100,
-            y: this.ovariumDetails.position.y - 100
-        }, 1);
-        this.addPeer({
-            x: 0,
-            y: 0
-        }, {
-            x: this.ovariumDetails.position.x + 100,
-            y: this.ovariumDetails.position.y + 100
-        }, 1);
-    },
 
-    addPeer: function (speed, position, size) {
-        var sprite = new PeerSprite(res.PeerSmall_tga);
+        // TODO for Travis
+        // different texture for different gang
+        var sprite = new PeerSprite(this.peerTexture);
         sprite.setScale(size);
         sprite.setSpeed(speed);
 //        cc.log(position.x + ": " + position.y);
         sprite.attr(position);
         this.addChild(sprite);
-        this.peers = this.peers.concat(sprite);
+        this.peerSprites = this.peerSprites.concat(sprite);
     },
 
     initLayer: function () {
+
         var size = cc.winSize;
         this.viewCenter = {
             x: size.width / 2,
@@ -209,16 +194,22 @@ var StartLayer = cc.Layer.extend({
             y: this.viewCenter.y
         };
 
+        this.connection = new Connection(this, globals.serverHost, globals.serverPort);
+        this.connection.sync();
+        cc.log(this.peers.length);
+
         this.renderOvarium();
 
         this.setupScene();
 
         this.cacheTextures();
+
+        this.setScale(0.7);
     },
 
     cacheTextures: function () {
         this.ovariumHaloTexture = cc.textureCache.addImage(res.OvariumHalo_png);
-//        this.ejectionPlist = cc.textureCache.addImage(res.ParticleTexture_plist);
+        this.peerTexture = cc.textureCache.addImage(res.PeerSmall_tga);
     },
 
     setupScene: function () {
@@ -381,6 +372,15 @@ var StartLayer = cc.Layer.extend({
         this.addTouchEventListener();
     },
 
+    addAbsortionEffect: function (position, angle) {
+        var absortionHalo = new cc.Sprite(this.ovariumHaloTexture);
+        absortionHalo.setRotation(- angle * 180 / Math.PI + 90);
+        absortionHalo.setScale(this.ovariumDetails.scale * 0.5);
+        absortionHalo.attr(position);
+        absortionHalo.runAction(cc.fadeOut(2));
+        this.addChild(absortionHalo, 2);
+    },
+
     addTouchEventListener: function () {
         var that = this;
         var touchListener = cc.EventListener.create({
@@ -394,41 +394,24 @@ var StartLayer = cc.Layer.extend({
                     x: Math.cos(eject_angle),
                     y: Math.sin(eject_angle)
                 };
-                var absortionPosition = {
-                    x: _offset.x * that.ovariumDetails.img_radius + that.viewCenter.x,
-                    y: _offset.y * that.ovariumDetails.img_radius + that.viewCenter.y
-                };
 
                 // update ovarium speed
                 that.ovariumDetails.speed = {
                     x: that.ovariumDetails.speed.x - _offset.x * globals.ejectForce,
                     y: that.ovariumDetails.speed.y - _offset.y * globals.ejectForce
                 };
+//                cc.log(that.ovariumDetails.speed.x + ": " + that.ovariumDetails.speed.x);
+
+                var absortionPosition = {
+                    x: _offset.x * that.ovariumDetails.img_radius + that.viewCenter.x,
+                    y: _offset.y * that.ovariumDetails.img_radius + that.viewCenter.y
+                };
 
                 that.addPeer({
                     x: that.ovariumDetails.speed.x + _offset.x * globals.ejectInitSpeed,
                     y: that.ovariumDetails.speed.y + _offset.y * globals.ejectInitSpeed
-                }, absortionPosition, 0.1);
-
-                var ejectionPSScale = 0.1;
-                var ps = new cc.ParticleSystem(res.ParticleTexture_plist);
-                ps.setScale(ejectionPSScale * that.ovariumDetails.scale);
-                ps.attr({
-                    sourcePos: cc.p(
-                        -440 + _offset.x * that.ovariumDetails.radius,
-                        420 + _offset.y * that.ovariumDetails.radius
-                        ),
-                    angle: (eject_angle * 180) / Math.PI
-                });
-                ps.setPositionType(cc.ParticleSystem.TYPE_FREE);
-                that.addChild(ps);
-
-                var absortionHalo = new cc.Sprite(that.ovariumHaloTexture);
-                absortionHalo.setRotation(- eject_angle * 180 / Math.PI + 90);
-                absortionHalo.setScale(that.ovariumDetails.scale * 0.5);
-                absortionHalo.attr(absortionPosition);
-                absortionHalo.runAction(cc.fadeOut(3));
-                that.addChild(absortionHalo, 2);
+                }, absortionPosition, 0.1, Gang.NEUTRAL, true);
+                that.addEjectionEffect(absortionPosition, eject_angle);
 
                 return true;
             }
@@ -440,10 +423,10 @@ var StartLayer = cc.Layer.extend({
         var keydownListener = cc.EventListener.create({
             event: cc.EventListener.KEYBOARD,
             onKeyPressed:  function(keyCode, event){
-                cc.log("keyCode" + keyCode);
+//                cc.log("keyCode" + keyCode);
             },
             onKeyReleased: function(keyCode, event){
-                cc.log("keyCode" + keyCode);
+//                cc.log("keyCode" + keyCode);
             }
         });
     }

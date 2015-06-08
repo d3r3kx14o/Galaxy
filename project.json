@@ -15,6 +15,7 @@
         "src/PeerSprite.js",
         "src/app.js",
         "src/global.js",
-        "src/pomelo-cocos2d-js.js"
+        "src/pomelo-cocos2d-js.js",
+        "src/connection.js"
     ]
 }
