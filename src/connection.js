@@ -1,10 +1,44 @@
 var Connection = Connection || {};
 
-Connection = function (layer, host, port) {
+Connection = function (layer, host, port, next) {
+    var self = this;
     this.host = host, this.port = port;
     this.layer = layer;
-    // TODO for THU-wyw
-    // connect to server
+    this.pomelo = window.pomelo;
+    var route = 'gate.gateHandler.queryEntry'
+    pomelo.init({
+        host: host,
+        port: port,
+        log: true
+    }, function() {
+        self.pomelo.request(route, { }, function(data) {
+            self.startConnectorSession(data.host, data.port, next);
+        })
+    })
+};
+
+Connection.prototype.startConnectorSession = function(host, port, next) {
+    var self = this;
+    var pomelo = window.pomelo;
+    var route = 'connector.entryHandler.entry';
+    pomelo.init({
+        host: host,
+        port: port,
+        log: true
+    }, function() {
+        pomelo.request(route, {
+        }, function(data) {
+            console.log(data);
+            pomelo.request('gameHall.playerHandler.addToGame', { }, function(data) {
+                self.layer.peers = {};
+                for (var i in data) {
+                    self.layer.peers[data[i].entityId] = data[i];
+                }
+            console.log(self.layer.peers);
+            next();
+            })
+        });
+    });
 };
 
 Connection.prototype.addLayer = function (layer) {
@@ -14,8 +48,8 @@ Connection.prototype.addLayer = function (layer) {
 Connection.prototype.sync = function () {
     // TODO for THU-wyw
 //    this.layer.peers = // position, speed, radius, property (Gang.RED|BULE)
-    this.layer.peers = [];
-    for (var i = 0; i < 10; i ++) {
+    this.layer.peers = {};
+    for (var i = 0; i < 5; i ++) {
         var peer = {
             position: {
                 x: Math.random() * globals.playground.width,
@@ -29,7 +63,7 @@ Connection.prototype.sync = function () {
             radius: Math.random(),
             property: Gang.NEUTRAL
         };
-        this.layer.peers = this.layer.peers.concat(peer);
+        this.layer.peers[i] = peer;
     }
 //    this.layer.playerPeers =
     // TODO for THU-wyw

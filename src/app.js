@@ -2,7 +2,7 @@ var StartLayer = cc.Layer.extend({
     ctor: function() {
         this._super();
         this.initLayer();
-        this.gameStart();
+//        this.gameStart();
         return true;
     },
 
@@ -60,8 +60,8 @@ var StartLayer = cc.Layer.extend({
     },
 
     initPeerSprites: function () {
-        for (var i = 0; i < this.peers.length; i ++) {
-            var p = this.peers[i];
+        for (var peerId in this.peers) {
+            var p = this.peers[peerId];
             this.addPeer(p.speed, p.position, p.radius, p.property, false);
         }
     },
@@ -157,7 +157,7 @@ var StartLayer = cc.Layer.extend({
     backgroundSparkles: [],
     walls: [],
     peerSprites: [],
-    peers: [],
+    peers: {},
     playerPeers: [],
 
     viewCenter: {
@@ -184,27 +184,28 @@ var StartLayer = cc.Layer.extend({
     initLayer: function () {
 
         var size = cc.winSize;
-        this.viewCenter = {
+        var self = this;
+        self.viewCenter = {
             x: size.width / 2,
             y: size.height / 2
         };
 
-        this.ovariumDetails.position = {
-            x: this.viewCenter.x,
-            y: this.viewCenter.y
+        self.ovariumDetails.position = {
+            x: self.viewCenter.x,
+            y: self.viewCenter.y
         };
 
-        this.connection = new Connection(this, globals.serverHost, globals.serverPort);
-        this.connection.sync();
-        cc.log(this.peers.length);
+        self.connection = new Connection(self, globals.serverHost, globals.serverPort, next);
+        function next() {
+            self.renderOvarium();
 
-        this.renderOvarium();
+            self.setupScene();
 
-        this.setupScene();
+            self.cacheTextures();
 
-        this.cacheTextures();
-
-        this.setScale(0.7);
+            self.setScale(0.7);
+            self.gameStart();
+        }
     },
 
     cacheTextures: function () {
