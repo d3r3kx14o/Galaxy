@@ -1,10 +1,44 @@
 var Connection = Connection || {};
 
-Connection = function (layer, host, port) {
+Connection = function (layer, host, port, next) {
+    var self = this;
     this.host = host, this.port = port;
     this.layer = layer;
-    // TODO for THU-wyw
-    // connect to server
+    this.pomelo = window.pomelo;
+    var route = 'gate.gateHandler.queryEntry'
+    pomelo.init({
+        host: host,
+        port: port,
+        log: true
+    }, function() {
+        self.pomelo.request(route, { }, function(data) {
+            self.startConnectorSession(data.host, data.port, next);
+        })
+    })
+};
+
+Connection.prototype.startConnectorSession = function(host, port, next) {
+    var self = this;
+    var pomelo = window.pomelo;
+    var route = 'connector.entryHandler.entry';
+    pomelo.init({
+        host: host,
+        port: port,
+        log: true
+    }, function() {
+        pomelo.request(route, {
+        }, function(data) {
+            console.log(data);
+            pomelo.request('gameHall.playerHandler.addToGame', { }, function(data) {
+                self.layer.peers = {};
+                for (var i in data) {
+                    self.layer.peers[data[i].entityId] = data[i];
+                }
+            console.log(self.layer.peers);
+            next();
+            })
+        });
+    });
 };
 
 Connection.prototype.addLayer = function (layer) {
@@ -14,6 +48,7 @@ Connection.prototype.addLayer = function (layer) {
 Connection.prototype.sync = function () {
     // TODO for THU-wyw
 //    this.layer.peers = // position, speed, radius, property (Gang.RED|BULE)
+<<<<<<< HEAD
     this.layer.peers = [];
     this.layer.asters = [];
     var peer = this.layer.ovariumDetails;
@@ -22,6 +57,11 @@ Connection.prototype.sync = function () {
     this.layer.quadtree.insert(aster);
     for (var i = 0; i < 10; i ++) {
         peer = {
+=======
+    this.layer.peers = {};
+    for (var i = 0; i < 5; i ++) {
+        var peer = {
+>>>>>>> origin/master
             position: {
                 x: Math.random() * globals.playground.width,
                 y: Math.random() * globals.playground.height
@@ -34,10 +74,14 @@ Connection.prototype.sync = function () {
             radius: Math.random(),
             property: ASTERPROPERTY.NEUTRAL
         };
+<<<<<<< HEAD
         aster = new Aster(peer.position, peer.speed, peer.radius * globals.img_radius, peer.property);
         this.layer.asters.push(aster);
         cc.log("New Aster:"+aster.pos.x+"   "+aster.radius);
         this.layer.quadtree.insert(aster);
+=======
+        this.layer.peers[i] = peer;
+>>>>>>> origin/master
     }
 
 //    this.layer.playerPeers =
