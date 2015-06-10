@@ -16,6 +16,10 @@
         "src/app.js",
         "src/global.js",
         "src/pomelo-cocos2d-js.js",
-        "src/connection.js"
+        "src/connection.js",
+        "src/MXCIFQuadtree.js",
+        "src/aster.js",
+        "src/math.js",
+        "src/GPhysics.js"
     ]
 }

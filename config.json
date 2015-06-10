@@ -8,7 +8,7 @@
     "entry": "main.js",
     "consolePort": 6050,
     "uploadPort": 6060,
-    "debugPort": 6070,
+    "debugPort": 6080,
     "forwardConsolePort": 10088,
     "forwardDebugPort": 10086,
     "forwardUploadPort": 10090

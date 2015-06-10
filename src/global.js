@@ -9,14 +9,21 @@ var globals = {
     ejectInitSpeed: 8,
     ejectForce: 0.5,
     frameRate: 24,
+    img_radius: 59.5,
     serverHost: "127.0.0.1",
     serverPort: "8080"
 };
 
-Gang = {
+var ASTERPROPERTY = {
     NEUTRAL: 0,
-    RED: 1,
-    BLUE: 2
+    YIN: 1,
+    YANG: 2
 };
 
+var quadtreeArgs = {
+    minX : 0,
+    minY : 0,
+    maxX : 1000,
+    maxY : 800
+};
 var connection = null;
