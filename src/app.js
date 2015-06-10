@@ -2,7 +2,7 @@ var StartLayer = cc.Layer.extend({
     ctor: function() {
         this._super();
         this.initLayer();
-//        this.gameStart();
+        this.gameStart();
         return true;
     },
 
@@ -16,12 +16,24 @@ var StartLayer = cc.Layer.extend({
     initLayer: function () {
         this.quadtree = QUAD.init(quadtreeArgs);
         var size = cc.winSize;
+        var self = this;
         this.viewCenter = {
             x: size.width / 2,
             y: size.height / 2
         };
 
-        this.connection = new Connection(this, globals.serverHost, globals.serverPort);
+//        this.connection = new Connection(this, globals.serverHost, globals.serverPort);
+        self.connection = new Connection(self, globals.serverHost, globals.serverPort, next);
+        function next() {
+            self.renderOvarium();
+
+            self.setupScene();
+
+            self.cacheTextures();
+
+            self.setScale(0.7);
+            self.gameStart();
+        }
         this.connection.sync();
 
 //        cc.log(this.asters.length);
@@ -41,16 +53,10 @@ var StartLayer = cc.Layer.extend({
     },
 
     initPeerSprites: function () {
-<<<<<<< HEAD
         // aster[0] is ovarium
         for (var i = 1; i < this.asters.length; i ++) {
             var p = this.asters[i];
             this.addSprite(p);
-=======
-        for (var peerId in this.peers) {
-            var p = this.peers[peerId];
-            this.addPeer(p.speed, p.position, p.radius, p.property, false);
->>>>>>> origin/master
         }
     },
 
@@ -219,43 +225,7 @@ var StartLayer = cc.Layer.extend({
         this.updateWalls();
         this.updatePeers();
         this.updateOvarium();
-<<<<<<< HEAD
         this.updateQuadtree();
-=======
-        this.checkCollisions();
-    },
-
-    connection: null,
-
-    ovarium: null,
-    ovariumShell: null,
-    ovariumAurora_clock: null,
-    ovariumAurora_anticlock: null,
-    ovariumNucleus: null,
-    ovariumEmergencePS: null,
-    ovariumHaloTexture: null,
-    peerTexture: null,
-    ovariumDetails: {
-        radius: 640,
-        img_radius: 59.5,
-        visionRange: 100,
-        speed: {
-            x: 0,
-            y: 0
-        },
-        position: {
-            x: 0,
-            y: 0
-        },
-        scale: 1,
-    },
-    backgroundSparkles: [],
-    walls: [],
-    peerSprites: [],
-    peers: {},
-    playerPeers: [],
->>>>>>> origin/master
-
         this.simulateCollisions();
     },
 
@@ -273,36 +243,6 @@ var StartLayer = cc.Layer.extend({
         this.peerSprites = this.peerSprites.concat(sprite);
     },
 
-<<<<<<< HEAD
-=======
-    initLayer: function () {
-
-        var size = cc.winSize;
-        var self = this;
-        self.viewCenter = {
-            x: size.width / 2,
-            y: size.height / 2
-        };
-
-        self.ovariumDetails.position = {
-            x: self.viewCenter.x,
-            y: self.viewCenter.y
-        };
-
-        self.connection = new Connection(self, globals.serverHost, globals.serverPort, next);
-        function next() {
-            self.renderOvarium();
-
-            self.setupScene();
-
-            self.cacheTextures();
-
-            self.setScale(0.7);
-            self.gameStart();
-        }
-    },
-
->>>>>>> origin/master
     cacheTextures: function () {
         this.ovariumHaloTexture = cc.textureCache.addImage(res.OvariumHalo_png);
         this.peerTexture = cc.textureCache.addImage(res.PeerSmall_tga);

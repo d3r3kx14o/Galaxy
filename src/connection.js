@@ -48,7 +48,6 @@ Connection.prototype.addLayer = function (layer) {
 Connection.prototype.sync = function () {
     // TODO for THU-wyw
 //    this.layer.peers = // position, speed, radius, property (Gang.RED|BULE)
-<<<<<<< HEAD
     this.layer.peers = [];
     this.layer.asters = [];
     var peer = this.layer.ovariumDetails;
@@ -57,11 +56,6 @@ Connection.prototype.sync = function () {
     this.layer.quadtree.insert(aster);
     for (var i = 0; i < 10; i ++) {
         peer = {
-=======
-    this.layer.peers = {};
-    for (var i = 0; i < 5; i ++) {
-        var peer = {
->>>>>>> origin/master
             position: {
                 x: Math.random() * globals.playground.width,
                 y: Math.random() * globals.playground.height
@@ -74,14 +68,10 @@ Connection.prototype.sync = function () {
             radius: Math.random(),
             property: ASTERPROPERTY.NEUTRAL
         };
-<<<<<<< HEAD
         aster = new Aster(peer.position, peer.speed, peer.radius * globals.img_radius, peer.property);
         this.layer.asters.push(aster);
         cc.log("New Aster:"+aster.pos.x+"   "+aster.radius);
         this.layer.quadtree.insert(aster);
-=======
-        this.layer.peers[i] = peer;
->>>>>>> origin/master
     }
 
 //    this.layer.playerPeers =
