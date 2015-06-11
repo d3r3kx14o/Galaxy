@@ -83,18 +83,22 @@ QUAD.init = function(args) {
             }
             return result;
         },updateItem: function(item){
+//            cc.log("updating node" + item.pos.x + " " + item.pos.y);
             var i = this.items.indexOf(item);
             if(GGeometry.rectContainsRect(this.rect, item.aabb())){
                 if (i == -1){
                     this.insert(item);
                 }else{
-                    var k = findInsertNode(item);
+                    var k = this.findInsertNode(item);
                     if (k != SELF){
                         this.items.splice(i, 1);
                         this.insert(item);
                     }
                 }
             }else {
+                if(i != -1){
+                    this.items.splice(i, 1);
+                }
                 if(this.depth != 0)
                    this.parent.updateItem(item);
             }

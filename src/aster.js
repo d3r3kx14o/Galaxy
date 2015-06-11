@@ -27,9 +27,9 @@ Aster.move = function(){
 }
 
 Aster.eject = function(mass, velocity){
-    GPhysics.divide(this, m, velocity);
+    GPhysics.divide(this, mass, velocity);
 }
 
 Aster.aabb = function(){
-    return GGeometry.Rect(this.pos.x - this.radius, this.pos.y - this.radius, this.radius * 2, this.radius * 2);
+    return GGeometry.rect(this.pos.x - this.radius, this.pos.y - this.radius, this.radius * 2, this.radius * 2);
 }

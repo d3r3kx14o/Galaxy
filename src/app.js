@@ -68,6 +68,7 @@ var StartLayer = cc.Layer.extend({
         for (var i = 0; i < this.asters.length; i ++) {
             var aster = this.asters[i];
             aster.move();
+            aster.quadtreeNode.updateItem(aster);
         }
         for (var i = 0; i < this.peerSprites.length; i ++) {
             var sprite = this.peerSprites[i];
@@ -134,7 +135,9 @@ var StartLayer = cc.Layer.extend({
         for(var i = 0; i < this.asters.length; i++){
             var aster = this.asters[i];
             var v = aster.velocity;
-            if(((aster.pos.x - aster.radius) <= 0) || (aster.pos.x + aster.radius) >= globals.playground.width) v.x = -v.x;
+            if((aster.pos.x - aster.radius) <= 0){
+                this.addCollideWithWallsEffect()
+            } || (aster.pos.x + aster.radius) >= globals.playground.width) v.x = -v.x;
             if(((aster.pos.y - aster.radius) <= 0) || (aster.pos.y + aster.radius) >= globals.playground.height) v.y = -v.y;
         }
     },
@@ -225,7 +228,7 @@ var StartLayer = cc.Layer.extend({
         this.updateWalls();
         this.updatePeers();
         this.updateOvarium();
-        this.updateQuadtree();
+//        this.updateQuadtree();
         this.simulateCollisions();
     },
 
