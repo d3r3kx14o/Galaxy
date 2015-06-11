@@ -7,7 +7,6 @@ var StartLayer = cc.Layer.extend({
     },
 
     gameStart: function () {
-
         this.initPeerSprites();
         this.addListeners();
         this.schedule(this.update, 1 / globals.frameRate);
@@ -91,6 +90,7 @@ var StartLayer = cc.Layer.extend({
     //  scaling animation
     updateOvarium: function () {
         this.ovarium.move();
+        this.ovarium.quadtreeNode.updateItem(this.ovarium);
         this.ovariumSprite.setScale(this.ovarium.radius / globals.img_radius);
     },
 
@@ -136,9 +136,21 @@ var StartLayer = cc.Layer.extend({
             var aster = this.asters[i];
             var v = aster.velocity;
             if((aster.pos.x - aster.radius) <= 0){
-                this.addCollideWithWallsEffect()
-            } || (aster.pos.x + aster.radius) >= globals.playground.width) v.x = -v.x;
-            if(((aster.pos.y - aster.radius) <= 0) || (aster.pos.y + aster.radius) >= globals.playground.height) v.y = -v.y;
+                v.x = -v.x;
+                this.addCollideWithWallsEffect("left", 0, aster.pos.y);
+            };
+            if((aster.pos.x + aster.radius) >= globals.playground.width){
+                this.addCollideWithWallsEffect("right", globals.playground.width, aster.pos.y);
+                v.x = -v.x;
+            }
+            if((aster.pos.y - aster.radius) <= 0){
+                v.y = - v.y;
+                this.addCollideWithWallsEffect("down", 0, aster.pos.x, 0);
+            }
+            if((aster.pos.y + aster.radius) >= globals.playground.height){
+                v.y = -v.y;
+                this.addCollideWithWallsEffect("down", 0, aster.pos.x, globals.playground.height);
+            }
         }
     },
 
@@ -158,6 +170,7 @@ var StartLayer = cc.Layer.extend({
                         this.deleteAster(aster2);
 //                        continue;
                     }
+
                     var angle = GGeometry.pToAngle( GGeometry.pSub(aster1.pos, aster2.pos));
                     that.addAbsortionEffect(GGeometry.pLerp(aster1.pos, aster2.pos, aster1.radius/(aster1.radius + aster2.radius)),angle);
                 }
@@ -481,22 +494,27 @@ var StartLayer = cc.Layer.extend({
                     x: Math.cos(eject_angle),
                     y: Math.sin(eject_angle)
                 };
+                var ejectVelocity = {
+                    x: that.ovarium.velocity.x + _offset.x * globals.ejectInitSpeed,
+                    y: that.ovarium.velocity.y + _offset.y * globals.ejectInitSpeed
+                }
+                var ejectVolumn = GPhysics.volumn(that.ovarium) * 0.1;
 
                 // update ovarium speed
-                that.ovarium.velocity = {
-                    x: that.ovarium.velocity.x - _offset.x * globals.ejectForce,
-                    y: that.ovarium.velocity.y - _offset.y * globals.ejectForce
-                };
+//                that.ovarium.velocity = {
+//                    x: that.ovarium.velocity.x - _offset.x * globals.ejectForce,
+//                    y: that.ovarium.velocity.y - _offset.y * globals.ejectForce
+//                };
 //                cc.log(that.ovarium.velocity.x + ": " + that.ovarium.velocity.x);
+                cc.log("ovarium Radius change from " + that.ovarium.radius);
+                that.ovarium.eject(ejectVolumn, ejectVelocity);
+                cc.log("ovarium Radius change to " + that.ovarium.radius);
 
                 var absortionPosition = {
                     x: _offset.x * that.ovariumDetails.img_radius + that.viewCenter.x,
                     y: _offset.y * that.ovariumDetails.img_radius + that.viewCenter.y
                 };
-                that.createAster({
-                    x: that.ovarium.velocity.x + _offset.x * globals.ejectInitSpeed,
-                    y: that.ovarium.velocity.y + _offset.y * globals.ejectInitSpeed
-                }, absortionPosition, 0.1, ASTERPROPERTY.NEUTRAL, true);
+                that.createAster(ejectVelocity, absortionPosition, Math.cbrt(ejectVolumn), ASTERPROPERTY.NEUTRAL, true);
                 that.addEjectionEffect(absortionPosition, eject_angle);
 
                 return true;

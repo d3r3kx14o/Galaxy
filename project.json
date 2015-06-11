@@ -19,7 +19,7 @@
         "src/connection.js",
         "src/MXCIFQuadtree.js",
         "src/aster.js",
-        "src/math.js",
+        "src/GGeometry.js",
         "src/GPhysics.js"
     ]
 }
